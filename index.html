@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Move Ledger — Austin → Thousand Oaks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Karla:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
+    <div class="route-line">
+      <span class="route-city">Austin, TX <span class="zip">78738</span></span>
+      <span class="route-arrow" aria-hidden="true">⟶</span>
+      <span class="route-city">Thousand Oaks, CA <span class="zip">Ventura Co.</span></span>
+    </div>
+    <h1>The Move Ledger</h1>
+    <p class="tagline">Sell the Texas house. Buy the California one. Know the payment before you sign anything.</p>
+  </div>
+</header>
+
+<main class="ledger">
+
+  <!-- ============ INPUT COLUMNS ============ -->
+  <div class="workbench">
+    <div class="input-columns">
+
+      <!-- SELL -->
+      <section class="panel" id="panel-sell">
+        <div class="panel-head">
+          <span class="panel-index">01</span>
+          <h2>Sell <em>— Austin</em></h2>
+        </div>
+
+        <div class="field">
+          <label for="txSalePrice">Sale price</label>
+          <div class="money-wrap"><span class="unit">$</span><input type="text" id="txSalePrice" inputmode="numeric" value="950,000"></div>
+        </div>
+
+        <div class="field">
+          <label for="txPayoff">Mortgage payoff</label>
+          <div class="money-wrap"><span class="unit">$</span><input type="text" id="txPayoff" inputmode="numeric" value="400,000"></div>
+        </div>
+
+        <div class="field">
+          <label>Selling costs</label>
+          <div class="mode-toggle" id="sellModeToggle" role="radiogroup" aria-label="Selling cost mode">
+            <button type="button" data-mode="commission" class="active" aria-pressed="true">TX net sheet</button>
+            <button type="button" data-mode="flatpct" aria-pressed="false">Flat closing&nbsp;%</button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field" id="fieldListing">
+            <label for="txListingPct">Listing agent</label>
+            <div class="money-wrap"><input type="text" id="txListingPct" inputmode="decimal" value="0"><span class="unit">%</span></div>
+          </div>
+          <div class="field" id="fieldBuyer">
+            <label for="txBuyerPct">Buyer's agent</label>
+            <div class="money-wrap"><input type="text" id="txBuyerPct" inputmode="decimal" value="3.0"><span class="unit">%</span></div>
+          </div>
+        </div>
+
+        <div class="field" id="fieldClosingPct">
+          <label for="txClosingPct">Flat closing costs <span class="hint" title="Replaces commissions, title policy, and fixed fees with a single percentage of the sale price.">?</span></label>
+          <div class="money-wrap"><input type="text" id="txClosingPct" inputmode="decimal" value="3.6"><span class="unit">%</span></div>
+        </div>
+
+        <div class="field-row row-tax-date">
+          <div class="field">
+            <label for="txAnnualTax">Annual taxes</label>
+            <div class="money-wrap"><span class="unit">$</span><input type="text" id="txAnnualTax" inputmode="numeric" value="12,000"></div>
+          </div>
+          <div class="field">
+            <label for="txCloseDate">Closing date</label>
+            <div class="money-wrap"><input type="date" id="txCloseDate" value="2026-08-25"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="txClosing">Escrow &amp; fixed fees <span class="hint" title="Escrow fee, recording fees, tax certificate, attorney document prep — the flat-dollar items on a Texas seller's net sheet (≈ $1,100 on an Independence Title estimate).">?</span></label>
+          <div class="money-wrap"><span class="unit">$</span><input type="text" id="txClosing" inputmode="numeric" value="1,106"></div>
+        </div>
+
+        <div class="subtotal">
+          <div class="subtotal-row muted"><span id="lblSellCost">Commissions</span><span id="outCommission">–</span></div>
+          <div class="subtotal-row muted" id="rowTitlePolicy"><span>Owner's title policy</span><span id="outTitlePolicy">–</span></div>
+          <div class="subtotal-row muted"><span>Escrow &amp; fees</span><span id="outFees">–</span></div>
+          <div class="subtotal-row muted"><span>Prorated taxes</span><span id="outProrated">–</span></div>
+          <div class="subtotal-row emphasis"><span>Net proceeds</span><span id="outProceeds">–</span></div>
+        </div>
+      </section>
+
+      <!-- BUY -->
+      <section class="panel" id="panel-buy">
+        <div class="panel-head">
+          <span class="panel-index">02</span>
+          <h2>Buy <em>— Thousand Oaks</em></h2>
+        </div>
+
+        <div class="field">
+          <label for="caPrice">Purchase price</label>
+          <div class="money-wrap"><span class="unit">$</span><input type="text" id="caPrice" inputmode="numeric" value="1,300,000"></div>
+        </div>
+
+        <div class="field">
+          <label for="caDown">Down payment <button type="button" class="link-btn" id="btnAllProceeds">use all proceeds</button></label>
+          <div class="money-wrap"><span class="unit">$</span><input type="text" id="caDown" inputmode="numeric" value="480,000"></div>
+          <div class="field-note"><span id="outDownPct">–</span> of purchase price</div>
+        </div>
+
+        <div class="subtotal">
+          <div class="subtotal-row muted" id="rowCushion"><span id="lblCushion">Proceeds left over</span><span id="outCushion">–</span></div>
+          <div class="subtotal-row emphasis"><span>Loan amount</span><span id="outLoan">–</span></div>
+        </div>
+      </section>
+
+      <!-- FINANCE -->
+      <section class="panel" id="panel-finance">
+        <div class="panel-head">
+          <span class="panel-index">03</span>
+          <h2>Finance <em>&amp; carry</em></h2>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="rate">Interest rate</label>
+            <div class="money-wrap"><input type="text" id="rate" inputmode="decimal" value="6.5"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="term">Term</label>
+            <div class="money-wrap select-wrap">
+              <select id="term">
+                <option value="30" selected>30 yr</option>
+                <option value="20">20 yr</option>
+                <option value="15">15 yr</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="taxRate">Property tax rate <span class="hint" title="California assesses at your purchase price. Effective rates around Thousand Oaks typically run ≈1.0–1.25% depending on local bonds/assessments — check the specific parcel.">?</span></label>
+          <div class="money-wrap"><input type="text" id="taxRate" inputmode="decimal" value="1.10"><span class="unit">%/yr</span></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="insurance">Insurance <span class="label-unit">$/yr</span></label>
+            <div class="money-wrap"><span class="unit">$</span><input type="text" id="insurance" inputmode="numeric" value="3,600"></div>
+          </div>
+          <div class="field">
+            <label for="hoa">HOA dues <span class="label-unit">$/mo</span></label>
+            <div class="money-wrap"><span class="unit">$</span><input type="text" id="hoa" inputmode="numeric" value="0"></div>
+          </div>
+        </div>
+
+        <div class="divider-label">Affordability</div>
+
+        <div class="field-row stack">
+          <div class="field">
+            <label for="income">Gross income <span class="label-unit">$/yr</span></label>
+            <div class="money-wrap"><span class="unit">$</span><input type="text" id="income" inputmode="numeric" value="" placeholder="e.g. 250,000"></div>
+          </div>
+          <div class="field">
+            <label for="debts">Other debts <span class="label-unit">$/mo</span></label>
+            <div class="money-wrap"><span class="unit">$</span><input type="text" id="debts" inputmode="numeric" value="0"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ RESULTS RAIL ============ -->
+    <aside class="results" id="results">
+      <div class="results-card">
+        <div class="results-eyebrow">Estimated monthly payment</div>
+        <div class="big-number" id="outTotal">–</div>
+
+        <div class="donut-row">
+          <div class="donut" id="donut" role="img" aria-label="Payment breakdown"></div>
+          <ul class="legend">
+            <li><i class="sw sw-pi"></i>P&amp;I <b id="outPI">–</b></li>
+            <li><i class="sw sw-tax"></i>Prop. tax <b id="outTax">–</b></li>
+            <li><i class="sw sw-ins"></i>Insurance <b id="outIns">–</b></li>
+            <li id="legendHoa" hidden><i class="sw sw-hoa"></i>HOA <b id="outHoa">–</b></li>
+          </ul>
+        </div>
+
+        <div class="afford">
+          <div class="afford-head">
+            <span>Payment vs. income</span>
+            <span class="afford-pct" id="outFrontPct">–</span>
+          </div>
+          <div class="meter"><div class="meter-fill" id="meterFront"></div><i class="tick" style="left:28%" data-label="28%"></i><i class="tick" style="left:36%" data-label="36%"></i></div>
+          <div class="afford-verdict" id="outVerdict">–</div>
+          <div class="afford-sub" id="outBackPct"></div>
+        </div>
+
+        <div class="save-block">
+          <input type="text" id="scenarioName" placeholder="Name this scenario…" maxlength="48">
+          <button type="button" id="btnSave" class="btn-primary">Save scenario</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============ COMPARISON ============ -->
+  <section class="compare" id="compareSection" hidden>
+    <div class="compare-head">
+      <h2>Saved scenarios</h2>
+      <p class="compare-note">Lowest monthly payment is flagged. Click <b>load</b> to pull a scenario back into the editor.</p>
+    </div>
+    <div class="table-scroll">
+      <table id="compareTable">
+        <thead><tr id="cmpHeadRow"></tr></thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <p>Estimates only — lender quotes, actual parcel tax bills, and insurance quotes will vary. Texas net-sheet mode models the owner's title policy from the TDI basic premium rates effective March&nbsp;1,&nbsp;2026 and prorates property tax from Jan&nbsp;1 to the closing date, mirroring an Independence Title seller's net worksheet. California property tax is modeled as an effective rate on the purchase price (reassessed at sale). Scenarios are saved privately in this browser.</p>
+  </footer>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

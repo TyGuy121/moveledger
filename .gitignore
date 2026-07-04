@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Editor / tooling
+.vscode/
+.idea/
+*.swp
+
+# Vercel
+.vercel/
+
+# Dependencies (none currently, but future-proofing)
+node_modules/
