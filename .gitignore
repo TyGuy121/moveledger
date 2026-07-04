@@ -11,3 +11,4 @@
 
 # Dependencies (none currently, but future-proofing)
 node_modules/
+.vercel
