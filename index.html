@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Move Ledger — Austin → Thousand Oaks</title>
+<title>The Move Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Karla:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,12 +15,12 @@
   <div class="masthead-inner">
     <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
     <div class="route-line">
-      <span class="route-city">Austin, TX <span class="zip">78738</span></span>
+      <input type="text" id="originLabel" class="route-input" placeholder="Sell — city, ST" value="" aria-label="Selling location" maxlength="40">
       <span class="route-arrow" aria-hidden="true">⟶</span>
-      <span class="route-city">Thousand Oaks, CA <span class="zip">Ventura Co.</span></span>
+      <input type="text" id="destLabel" class="route-input" placeholder="Buy — city, ST" value="" aria-label="Buying location" maxlength="40">
     </div>
     <h1>The Move Ledger</h1>
-    <p class="tagline">Sell the Texas house. Buy the California one. Know the payment before you sign anything.</p>
+    <p class="tagline">Sell one home, buy another — know the payment before you sign anything.</p>
   </div>
 </header>
 
@@ -34,7 +34,7 @@
       <section class="panel" id="panel-sell">
         <div class="panel-head">
           <span class="panel-index">01</span>
-          <h2>Sell <em>— Austin</em></h2>
+          <h2>Sell <em id="sellSubtitle" hidden></em></h2>
         </div>
 
         <div class="field">
@@ -50,25 +50,35 @@
         <div class="field">
           <label>Selling costs</label>
           <div class="mode-toggle" id="sellModeToggle" role="radiogroup" aria-label="Selling cost mode">
-            <button type="button" data-mode="commission" class="active" aria-pressed="true">TX net sheet</button>
-            <button type="button" data-mode="flatpct" aria-pressed="false">Flat closing&nbsp;%</button>
+            <button type="button" data-mode="flatpct" class="active" aria-pressed="true">Flat closing&nbsp;%</button>
+            <button type="button" data-mode="commission" aria-pressed="false">Texas net sheet</button>
           </div>
         </div>
 
         <div class="field-row">
           <div class="field" id="fieldListing">
-            <label for="txListingPct">Listing agent</label>
-            <div class="money-wrap"><input type="text" id="txListingPct" inputmode="decimal" value="0"><span class="unit">%</span></div>
+            <label for="txListingPct">Listing agent <span class="hint" title="Set to 0 if you're listing it yourself (or negotiated it away).">?</span></label>
+            <div class="money-wrap"><input type="text" id="txListingPct" inputmode="decimal" value="2.75"><span class="unit">%</span></div>
           </div>
           <div class="field" id="fieldBuyer">
             <label for="txBuyerPct">Buyer's agent</label>
-            <div class="money-wrap"><input type="text" id="txBuyerPct" inputmode="decimal" value="3.0"><span class="unit">%</span></div>
+            <div class="money-wrap"><input type="text" id="txBuyerPct" inputmode="decimal" value="2.75"><span class="unit">%</span></div>
           </div>
         </div>
 
         <div class="field" id="fieldClosingPct">
-          <label for="txClosingPct">Flat closing costs <span class="hint" title="Replaces commissions, title policy, and fixed fees with a single percentage of the sale price.">?</span></label>
-          <div class="money-wrap"><input type="text" id="txClosingPct" inputmode="decimal" value="3.6"><span class="unit">%</span></div>
+          <label for="txClosingPct">All-in closing costs <span class="hint" title="Everything the seller pays at closing, as a % of sale price: the agent commissions above plus ≈2.5% for title, escrow, and transfer costs. Auto-adjusts when you edit the commissions — or drag the slider / type to set it yourself. National all-in average runs 8–10%.">?</span></label>
+          <div class="money-wrap"><input type="text" id="txClosingPct" inputmode="decimal" value="8.0"><span class="unit">%</span></div>
+          <input type="range" id="txClosingPctSlider" min="0" max="15" step="0.1" value="8.0" aria-label="All-in closing costs percentage">
+          <div class="field-note" id="closingPctNote" hidden></div>
+        </div>
+
+        <div class="field" id="fieldTitlePolicy">
+          <label class="check-label" for="sellerPaysTitle">
+            <input type="checkbox" id="sellerPaysTitle" checked>
+            Seller pays owner's title policy
+            <span class="hint" title="Texas custom is seller-paid (TDI basic premium rates). Uncheck if the buyer is covering it — some net sheets show $0 here.">?</span>
+          </label>
         </div>
 
         <div class="field-row row-tax-date">
@@ -82,15 +92,15 @@
           </div>
         </div>
 
-        <div class="field">
-          <label for="txClosing">Escrow &amp; fixed fees <span class="hint" title="Escrow fee, recording fees, tax certificate, attorney document prep — the flat-dollar items on a Texas seller's net sheet (≈ $1,100 on an Independence Title estimate).">?</span></label>
-          <div class="money-wrap"><span class="unit">$</span><input type="text" id="txClosing" inputmode="numeric" value="1,106"></div>
+        <div class="field" id="fieldFees">
+          <label for="txClosing">Escrow &amp; fixed fees <span class="hint" title="Flat-dollar closing items on the seller's side — escrow/settlement fee, recording fees, document prep. Only applies in net-sheet mode; the flat closing % already covers these.">?</span></label>
+          <div class="money-wrap"><span class="unit">$</span><input type="text" id="txClosing" inputmode="numeric" value="0"></div>
         </div>
 
         <div class="subtotal">
           <div class="subtotal-row muted"><span id="lblSellCost">Commissions</span><span id="outCommission">–</span></div>
           <div class="subtotal-row muted" id="rowTitlePolicy"><span>Owner's title policy</span><span id="outTitlePolicy">–</span></div>
-          <div class="subtotal-row muted"><span>Escrow &amp; fees</span><span id="outFees">–</span></div>
+          <div class="subtotal-row muted" id="rowFees"><span>Escrow &amp; fees</span><span id="outFees">–</span></div>
           <div class="subtotal-row muted"><span>Prorated taxes</span><span id="outProrated">–</span></div>
           <div class="subtotal-row emphasis"><span>Net proceeds</span><span id="outProceeds">–</span></div>
         </div>
@@ -100,7 +110,7 @@
       <section class="panel" id="panel-buy">
         <div class="panel-head">
           <span class="panel-index">02</span>
-          <h2>Buy <em>— Thousand Oaks</em></h2>
+          <h2>Buy <em id="buySubtitle" hidden></em></h2>
         </div>
 
         <div class="field">
@@ -145,8 +155,14 @@
         </div>
 
         <div class="field">
-          <label for="taxRate">Property tax rate <span class="hint" title="California assesses at your purchase price. Effective rates around Thousand Oaks typically run ≈1.0–1.25% depending on local bonds/assessments — check the specific parcel.">?</span></label>
+          <label for="destState">Destination state <span class="hint" title="Sets the property-tax rate to the state's average effective rate. You can still edit the rate below for your specific parcel.">?</span></label>
+          <div class="money-wrap select-wrap"><select id="destState"><option value="">Select state…</option></select></div>
+        </div>
+
+        <div class="field">
+          <label for="taxRate">Property tax rate <span class="hint" title="Effective annual property tax as a % of the home's value. Auto-filled from the destination state's average — override it for the specific parcel (local bonds and assessments vary).">?</span></label>
           <div class="money-wrap"><input type="text" id="taxRate" inputmode="decimal" value="1.10"><span class="unit">%/yr</span></div>
+          <div class="field-note" id="taxRateNote" hidden></div>
         </div>
 
         <div class="field-row">
@@ -224,7 +240,7 @@
   </section>
 
   <footer class="colophon">
-    <p>Estimates only — lender quotes, actual parcel tax bills, and insurance quotes will vary. Texas net-sheet mode models the owner's title policy from the TDI basic premium rates effective March&nbsp;1,&nbsp;2026 and prorates property tax from Jan&nbsp;1 to the closing date, mirroring an Independence Title seller's net worksheet. California property tax is modeled as an effective rate on the purchase price (reassessed at sale). Scenarios are saved privately in this browser.</p>
+    <p>Estimates only — lender quotes, actual parcel tax bills, and insurance quotes will vary. Selling costs default to a single flat percentage of the sale price; the optional <b>Texas net sheet</b> mode instead models the owner's title policy from the TDI basic premium rates effective March&nbsp;1,&nbsp;2026 and prorates property tax from Jan&nbsp;1 to the closing date. Property tax is modeled as an effective annual rate on the purchase price; the destination-state selector fills in that state's average effective rate, which you can override. Scenarios are saved privately in this browser.</p>
   </footer>
 </main>
 

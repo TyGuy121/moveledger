@@ -102,6 +102,28 @@ body {
 .route-arrow { color: var(--gold); }
 .zip { color: var(--gold-deep); }
 
+.route-input {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--line-strong);
+  padding: 2px 2px 3px;
+  width: 15ch;
+  transition: border-color .15s, color .15s;
+}
+.route-input::placeholder { color: var(--ink-faint); opacity: .8; }
+.route-input:hover { border-bottom-color: #c9bfa6; }
+.route-input:focus {
+  outline: none;
+  color: var(--ink);
+  border-bottom-style: solid;
+  border-bottom-color: var(--gold);
+}
+
 .masthead h1 {
   font-family: var(--font-display);
   font-optical-sizing: auto;
@@ -208,13 +230,33 @@ body {
 .money-wrap input[type="date"] {
   font-size: 12.5px;
   letter-spacing: -0.02em;
-  padding-right: 0;
+  cursor: pointer;
 }
+/* the whole field opens the picker on click (see app.js), so the icon is
+   redundant — and it crowds the year out of the narrow field */
 .money-wrap input[type="date"]::-webkit-calendar-picker-indicator {
   display: none;
 }
 
 .field-note { margin-top: 6px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); }
+
+input[type="range"] {
+  width: 100%;
+  margin: 8px 0 0;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+input[type="range"]:disabled { cursor: not-allowed; opacity: .4; }
+
+.check-label { cursor: pointer; margin-bottom: 0; }
+.check-label input[type="checkbox"] {
+  width: 15px; height: 15px;
+  margin: 0;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.field.inactive .check-label,
+.field.inactive .check-label input[type="checkbox"] { cursor: not-allowed; }
 
 .link-btn {
   border: none; background: none; cursor: pointer;

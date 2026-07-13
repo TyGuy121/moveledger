@@ -28,7 +28,48 @@ initTheme();
 const MONEY_FIELDS = ["txSalePrice", "txPayoff", "txAnnualTax", "txClosing", "caPrice", "caDown", "insurance", "hoa", "income", "debts"];
 const RATE_FIELDS = ["txListingPct", "txBuyerPct", "txClosingPct", "rate", "taxRate"];
 
-let sellMode = "commission"; // "commission" (TX net sheet) | "flatpct"
+let sellMode = "flatpct"; // "flatpct" (universal, default) | "commission" (Texas net sheet)
+
+/* Non-commission seller closing costs (title, escrow, transfer taxes) ≈ 2.5% of sale
+   price nationally — commissions + this baseline give the all-in flat closing %. */
+const NON_COMMISSION_PCT = 2.5;
+
+/* Average effective property-tax rate by state (% of home value).
+   Approximate recent effective rates (Tax Foundation / ATTOM); illustrative defaults —
+   the rate stays editable for the specific parcel. */
+const STATES = [
+  ["AL", "Alabama", 0.40], ["AK", "Alaska", 1.07], ["AZ", "Arizona", 0.63],
+  ["AR", "Arkansas", 0.62], ["CA", "California", 0.75], ["CO", "Colorado", 0.51],
+  ["CT", "Connecticut", 1.79], ["DE", "Delaware", 0.58], ["DC", "District of Columbia", 0.57],
+  ["FL", "Florida", 0.83], ["GA", "Georgia", 0.90], ["HI", "Hawaii", 0.29],
+  ["ID", "Idaho", 0.63], ["IL", "Illinois", 2.08], ["IN", "Indiana", 0.84],
+  ["IA", "Iowa", 1.52], ["KS", "Kansas", 1.34], ["KY", "Kentucky", 0.83],
+  ["LA", "Louisiana", 0.56], ["ME", "Maine", 1.24], ["MD", "Maryland", 1.05],
+  ["MA", "Massachusetts", 1.14], ["MI", "Michigan", 1.38], ["MN", "Minnesota", 1.11],
+  ["MS", "Mississippi", 0.79], ["MO", "Missouri", 0.98], ["MT", "Montana", 0.74],
+  ["NE", "Nebraska", 1.63], ["NV", "Nevada", 0.55], ["NH", "New Hampshire", 1.93],
+  ["NJ", "New Jersey", 2.23], ["NM", "New Mexico", 0.67], ["NY", "New York", 1.72],
+  ["NC", "North Carolina", 0.80], ["ND", "North Dakota", 0.98], ["OH", "Ohio", 1.59],
+  ["OK", "Oklahoma", 0.89], ["OR", "Oregon", 0.93], ["PA", "Pennsylvania", 1.49],
+  ["RI", "Rhode Island", 1.40], ["SC", "South Carolina", 0.57], ["SD", "South Dakota", 1.17],
+  ["TN", "Tennessee", 0.67], ["TX", "Texas", 1.68], ["UT", "Utah", 0.57],
+  ["VT", "Vermont", 1.83], ["VA", "Virginia", 0.87], ["WA", "Washington", 0.87],
+  ["WV", "West Virginia", 0.57], ["WI", "Wisconsin", 1.61], ["WY", "Wyoming", 0.61],
+];
+const STATE_TAX_RATES = Object.fromEntries(STATES.map(([code, , rate]) => [code, rate]));
+const STATE_NAMES = Object.fromEntries(STATES.map(([code, name]) => [code, name]));
+
+/* States where the average effective rate misleads for a NEW purchase.
+   CA reassesses at the purchase price (Prop 13 keeps long-held homes' average low),
+   so a fresh buy typically runs ≈1.0–1.25% with local bonds. */
+const PURCHASE_RATE_OVERRIDES = { CA: 1.10 };
+const STATE_RATE_NOTES = {
+  CA: "California reassesses at your purchase price — new purchases typically run ≈1.0–1.25% with local bonds (the 0.75% state average reflects long-held homes)",
+};
+
+const stateFillRate = (code) => PURCHASE_RATE_OVERRIDES[code] ?? STATE_TAX_RATES[code];
+const stateNote = (code) =>
+  STATE_RATE_NOTES[code] ?? `${STATE_NAMES[code]} average ≈ ${STATE_TAX_RATES[code].toFixed(2)}% — verify your parcel`;
 
 /* Texas owner's title policy — TDI basic premium rates effective 2026-03-01 */
 const TDI_TIERS = [
@@ -84,10 +125,67 @@ function formatMoneyInput(el) {
   el.value = n.toLocaleString("en-US");
 }
 
+/* ————— location / state property tax ————— */
+
+function populateStates() {
+  const sel = $("destState");
+  for (const [code, name] of STATES) {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = `${name} (${code})`;
+    sel.appendChild(opt);
+  }
+}
+
+function applyStateRate(code) {
+  const note = $("taxRateNote");
+  if (!code || STATE_TAX_RATES[code] == null) {
+    note.hidden = true;
+    return;
+  }
+  $("taxRate").value = stateFillRate(code).toFixed(2);
+  note.hidden = false;
+  note.textContent = stateNote(code);
+}
+
+/* ————— all-in closing % ⇄ commissions / slider ————— */
+
+function syncClosingSlider() {
+  const n = parseRate($("txClosingPct").value);
+  $("txClosingPctSlider").value = String(Math.min(n, 15));
+}
+
+/* commissions drive the all-in % (flat mode only); manual edits override */
+function autoFlatFromCommissions() {
+  if (sellMode !== "flatpct") return;
+  const l = parseRate($("txListingPct").value);
+  const b = parseRate($("txBuyerPct").value);
+  const allIn = Number((l + b + NON_COMMISSION_PCT).toFixed(2));
+  $("txClosingPct").value = String(allIn);
+  syncClosingSlider();
+  const note = $("closingPctNote");
+  note.hidden = false;
+  note.textContent = `${(l + b).toFixed(2)}% commissions + ≈${NON_COMMISSION_PCT}% title, escrow & transfer`;
+}
+
+function setSubtitle(id, text) {
+  const el = $(id);
+  if (text) {
+    el.textContent = "— " + text;
+    el.hidden = false;
+  } else {
+    el.textContent = "";
+    el.hidden = true;
+  }
+}
+
 /* ————— core math ————— */
 
 function readInputs() {
   return {
+    originLabel: $("originLabel").value.trim(),
+    destLabel: $("destLabel").value.trim(),
+    destState: $("destState").value,
     txSalePrice: parseMoney($("txSalePrice").value),
     txPayoff: parseMoney($("txPayoff").value),
     txListingPct: parseRate($("txListingPct").value),
@@ -96,6 +194,7 @@ function readInputs() {
     txAnnualTax: parseMoney($("txAnnualTax").value),
     txCloseDate: $("txCloseDate").value,
     sellMode,
+    sellerPaysTitle: $("sellerPaysTitle").checked,
     txClosing: parseMoney($("txClosing").value),
     caPrice: parseMoney($("caPrice").value),
     caDown: parseMoney($("caDown").value),
@@ -116,9 +215,11 @@ function compute(v) {
   const buyerPct = v.txBuyerPct ?? v.txCommission ?? 0;
   const sellCostRate = flatPct ? (v.txClosingPct ?? 0) : listingPct + buyerPct;
   const commission = v.txSalePrice * (sellCostRate / 100);
-  const titlePolicy = flatPct ? 0 : titlePolicyPremium(v.txSalePrice);
+  // legacy scenarios predate the checkbox — treat missing as the TX custom (seller pays)
+  const titlePolicy = flatPct || v.sellerPaysTitle === false ? 0 : titlePolicyPremium(v.txSalePrice);
+  const fees = flatPct ? 0 : v.txClosing; // flat % already covers fixed fees
   const prorated = (v.txAnnualTax ?? 0) * proratedTaxFraction(v.txCloseDate ?? "");
-  const proceeds = v.txSalePrice - v.txPayoff - commission - titlePolicy - v.txClosing - prorated;
+  const proceeds = v.txSalePrice - v.txPayoff - commission - titlePolicy - fees - prorated;
 
   const down = Math.min(v.caDown, v.caPrice);
   const loan = Math.max(v.caPrice - down, 0);
@@ -139,7 +240,7 @@ function compute(v) {
   const frontPct = monthlyIncome > 0 ? (total / monthlyIncome) * 100 : 0;
   const backPct = monthlyIncome > 0 ? ((total + v.debts) / monthlyIncome) * 100 : 0;
 
-  return { commission, sellCostRate, flatPct, titlePolicy, prorated, fees: v.txClosing, proceeds, down, loan, cushion, pi, tax, ins, hoa: v.hoa, total, frontPct, backPct, downPct: v.caPrice > 0 ? (down / v.caPrice) * 100 : 0 };
+  return { commission, sellCostRate, flatPct, titlePolicy, prorated, fees, proceeds, down, loan, cushion, pi, tax, ins, hoa: v.hoa, total, frontPct, backPct, downPct: v.caPrice > 0 ? (down / v.caPrice) * 100 : 0 };
 }
 
 /* ————— render ————— */
@@ -148,10 +249,14 @@ function render() {
   const v = readInputs();
   const c = compute(v);
 
+  setSubtitle("sellSubtitle", v.originLabel);
+  setSubtitle("buySubtitle", v.destLabel);
+
   $("lblSellCost").textContent = c.flatPct ? `Flat closing (${c.sellCostRate}%)` : "Commissions";
   $("outCommission").textContent = "−" + fmtMoney(c.commission);
   $("rowTitlePolicy").hidden = c.flatPct;
   $("outTitlePolicy").textContent = "−" + fmtMoney(c.titlePolicy);
+  $("rowFees").hidden = c.flatPct;
   $("outFees").textContent = "−" + fmtMoney(c.fees);
   $("outProrated").textContent = "−" + fmtMoney(c.prorated);
   $("outProceeds").textContent = fmtMoneySigned(c.proceeds);
@@ -234,7 +339,9 @@ function saveCurrent() {
   const { v } = render();
   let name = nameEl.value.trim();
   if (!name) {
-    name = `Sell ${shortMoney(v.txSalePrice)} / Buy ${shortMoney(v.caPrice)} / ${Math.round((v.caDown / (v.caPrice || 1)) * 100)}% down`;
+    const route = v.originLabel && v.destLabel ? `${v.originLabel} → ${v.destLabel}` : v.destLabel || v.originLabel;
+    const money = `Sell ${shortMoney(v.txSalePrice)} / Buy ${shortMoney(v.caPrice)} / ${Math.round((v.caDown / (v.caPrice || 1)) * 100)}% down`;
+    name = route ? `${route} · ${money}` : money;
   }
   const list = loadScenarios();
   const existing = list.findIndex((s) => s.name === name);
@@ -252,7 +359,23 @@ const shortMoney = (n) =>
 function applyScenario(inputs) {
   MONEY_FIELDS.forEach((id) => { $(id).value = (inputs[id] ?? 0).toLocaleString("en-US"); });
   RATE_FIELDS.forEach((id) => { $(id).value = String(inputs[id] ?? 0); });
-  if (inputs.txClosingPct == null) $("txClosingPct").value = "3.6";
+  $("originLabel").value = inputs.originLabel || "";
+  $("destLabel").value = inputs.destLabel || "";
+  // legacy scenarios predate the checkbox
+  $("sellerPaysTitle").checked = inputs.sellerPaysTitle !== false;
+  const st = inputs.destState || "";
+  $("destState").value = st;
+  // show the state note only if the saved rate still matches that state's fill rate
+  const note = $("taxRateNote");
+  if (st && STATE_TAX_RATES[st] != null && Math.abs((inputs.taxRate ?? 0) - stateFillRate(st)) < 0.005) {
+    note.hidden = false;
+    note.textContent = stateNote(st);
+  } else {
+    note.hidden = true;
+  }
+  if (inputs.txClosingPct == null) $("txClosingPct").value = "8.0";
+  syncClosingSlider();
+  $("closingPctNote").hidden = true; // saved value may not be commission-derived
   // legacy scenarios saved a single txCommission — surface it as the buyer's-agent side
   if (inputs.txBuyerPct == null && inputs.txCommission != null) $("txBuyerPct").value = String(inputs.txCommission);
   $("txCloseDate").value = inputs.txCloseDate || "2026-08-25";
@@ -267,11 +390,11 @@ function deleteScenario(name) {
 }
 
 const CMP_ROWS = [
-  ["TX sale price", (c, v) => fmtMoney(v.txSalePrice)],
-  ["TX selling costs", (c) => `−${fmtMoney(c.commission + c.titlePolicy + c.fees)} (${c.sellCostRate}%${c.flatPct ? " flat" : " comm. + title/fees"})`],
-  ["Prorated TX taxes", (c) => "−" + fmtMoney(c.prorated)],
+  ["Sale price", (c, v) => fmtMoney(v.txSalePrice)],
+  ["Selling costs", (c) => `−${fmtMoney(c.commission + c.titlePolicy + c.fees)} (${c.sellCostRate}%${c.flatPct ? " flat" : " comm. + title/fees"})`],
+  ["Prorated taxes", (c) => "−" + fmtMoney(c.prorated)],
   ["Net proceeds", (c) => fmtMoneySigned(c.proceeds)],
-  ["CA purchase price", (c, v) => fmtMoney(v.caPrice)],
+  ["Purchase price", (c, v) => fmtMoney(v.caPrice)],
   ["Down payment", (c, v) => `${fmtMoney(v.caDown)} (${fmtPct(c.downPct, 0)})`],
   ["Loan amount", (c) => fmtMoney(c.loan)],
   ["Rate / term", (c, v) => `${v.rate}% · ${v.term}yr`],
@@ -337,17 +460,26 @@ function setSellMode(mode) {
     b.classList.toggle("active", active);
     b.setAttribute("aria-pressed", String(active));
   });
-  $("fieldListing").classList.toggle("inactive", flat);
-  $("fieldBuyer").classList.toggle("inactive", flat);
+  // commissions stay active in both modes — in flat mode they drive the all-in %
+  $("fieldTitlePolicy").classList.toggle("inactive", flat);
+  $("fieldFees").classList.toggle("inactive", flat);
   $("fieldClosingPct").classList.toggle("inactive", !flat);
-  $("txListingPct").disabled = flat;
-  $("txBuyerPct").disabled = flat;
+  $("sellerPaysTitle").disabled = flat;
+  $("txClosing").disabled = flat;
   $("txClosingPct").disabled = !flat;
+  $("txClosingPctSlider").disabled = !flat;
   render();
 }
 
 document.querySelectorAll("#sellModeToggle button").forEach((b) => {
-  b.addEventListener("click", () => setSellMode(b.dataset.mode));
+  b.addEventListener("click", () => {
+    // entering net-sheet mode with no itemized fees: prefill typical TX flat-dollar
+    // items (escrow $750 + recording $66 + tax cert $65 + attorney $225 = $1,106)
+    if (b.dataset.mode === "commission" && parseMoney($("txClosing").value) === 0) {
+      $("txClosing").value = "1,106";
+    }
+    setSellMode(b.dataset.mode);
+  });
 });
 
 /* ————— wiring ————— */
@@ -356,6 +488,36 @@ document.querySelectorAll("input").forEach((el) => {
   el.addEventListener("input", render);
 });
 $("term").addEventListener("change", render);
+
+["txListingPct", "txBuyerPct"].forEach((id) => {
+  $(id).addEventListener("input", () => { autoFlatFromCommissions(); render(); });
+});
+
+$("txClosingPctSlider").addEventListener("input", (e) => {
+  $("txClosingPct").value = e.target.value;
+  $("closingPctNote").hidden = true; // manual override — no longer commission-derived
+  render();
+});
+
+$("txClosingPct").addEventListener("input", () => {
+  syncClosingSlider();
+  $("closingPctNote").hidden = true;
+});
+
+// clicking anywhere on the closing-date box opens the native calendar —
+// the built-in picker icon is easy to miss in the narrow field
+$("txCloseDate").addEventListener("click", (e) => {
+  if (typeof e.target.showPicker === "function") {
+    try { e.target.showPicker(); } catch { /* non-gesture or unsupported — segment editing still works */ }
+  }
+});
+
+$("destState").addEventListener("change", (e) => {
+  applyStateRate(e.target.value);
+  render();
+});
+// a manual edit to the rate detaches it from the state average, so drop the note
+$("taxRate").addEventListener("input", () => { $("taxRateNote").hidden = true; });
 
 MONEY_FIELDS.forEach((id) => {
   $(id).addEventListener("blur", (e) => { formatMoneyInput(e.target); render(); });
@@ -382,5 +544,7 @@ $("compareTable").addEventListener("click", (e) => {
   }
 });
 
+populateStates();
+autoFlatFromCommissions(); // defaults: 2.75 + 2.75 + 2.5 = 8.0% all-in
 setSellMode(sellMode);
 renderCompare();
