@@ -167,8 +167,9 @@
 
         <div class="field-row">
           <div class="field">
-            <label for="insurance">Insurance <span class="label-unit">$/yr</span></label>
+            <label for="insurance">Insurance <span class="hint" title="Auto-filled from the destination state's average premium (NerdWallet 2026, $400k dwelling coverage — roughly a $1M home). Rates vary a lot by location, home, and deductible — replace with a real quote.">?</span><span class="label-unit">$/yr</span></label>
             <div class="money-wrap"><span class="unit">$</span><input type="text" id="insurance" inputmode="numeric" value="3,600"></div>
+            <div class="field-note" id="insuranceNote" hidden></div>
           </div>
           <div class="field">
             <label for="hoa">HOA dues <span class="label-unit">$/mo</span></label>
@@ -240,7 +241,7 @@
   </section>
 
   <footer class="colophon">
-    <p>Estimates only — lender quotes, actual parcel tax bills, and insurance quotes will vary. Selling costs default to a single flat percentage of the sale price; the optional <b>Texas net sheet</b> mode instead models the owner's title policy from the TDI basic premium rates effective March&nbsp;1,&nbsp;2026 and prorates property tax from Jan&nbsp;1 to the closing date. Property tax is modeled as an effective annual rate on the purchase price; the destination-state selector fills in that state's average effective rate, which you can override. Scenarios are saved privately in this browser.</p>
+    <p>Estimates only — lender quotes, actual parcel tax bills, and insurance quotes will vary. Selling costs default to a single flat percentage of the sale price; the optional <b>Texas net sheet</b> mode instead models the owner's title policy from the TDI basic premium rates effective March&nbsp;1,&nbsp;2026 and prorates property tax from Jan&nbsp;1 to the closing date. Property tax is modeled as an effective annual rate on the purchase price; the destination-state selector fills in that state's average effective rate, which you can override. It also fills homeowners insurance with the state's average premium (NerdWallet 2026, $400k dwelling coverage) — actual quotes vary widely by location, construction, and coverage. Scenarios are saved privately in this browser.</p>
   </footer>
 </main>
 

@@ -34,30 +34,31 @@ let sellMode = "flatpct"; // "flatpct" (universal, default) | "commission" (Texa
    price nationally — commissions + this baseline give the all-in flat closing %. */
 const NON_COMMISSION_PCT = 2.5;
 
-/* Average effective property-tax rate by state (% of home value).
-   Approximate recent effective rates (Tax Foundation / ATTOM); illustrative defaults —
-   the rate stays editable for the specific parcel. */
+/* Per-state averages: [code, name, avg effective property-tax rate (% of value),
+   avg annual homeowners premium ($ — NerdWallet 2026, $400k dwelling / $300k
+   liability / $1k deductible)]. Illustrative defaults — both stay editable. */
 const STATES = [
-  ["AL", "Alabama", 0.40], ["AK", "Alaska", 1.07], ["AZ", "Arizona", 0.63],
-  ["AR", "Arkansas", 0.62], ["CA", "California", 0.75], ["CO", "Colorado", 0.51],
-  ["CT", "Connecticut", 1.79], ["DE", "Delaware", 0.58], ["DC", "District of Columbia", 0.57],
-  ["FL", "Florida", 0.83], ["GA", "Georgia", 0.90], ["HI", "Hawaii", 0.29],
-  ["ID", "Idaho", 0.63], ["IL", "Illinois", 2.08], ["IN", "Indiana", 0.84],
-  ["IA", "Iowa", 1.52], ["KS", "Kansas", 1.34], ["KY", "Kentucky", 0.83],
-  ["LA", "Louisiana", 0.56], ["ME", "Maine", 1.24], ["MD", "Maryland", 1.05],
-  ["MA", "Massachusetts", 1.14], ["MI", "Michigan", 1.38], ["MN", "Minnesota", 1.11],
-  ["MS", "Mississippi", 0.79], ["MO", "Missouri", 0.98], ["MT", "Montana", 0.74],
-  ["NE", "Nebraska", 1.63], ["NV", "Nevada", 0.55], ["NH", "New Hampshire", 1.93],
-  ["NJ", "New Jersey", 2.23], ["NM", "New Mexico", 0.67], ["NY", "New York", 1.72],
-  ["NC", "North Carolina", 0.80], ["ND", "North Dakota", 0.98], ["OH", "Ohio", 1.59],
-  ["OK", "Oklahoma", 0.89], ["OR", "Oregon", 0.93], ["PA", "Pennsylvania", 1.49],
-  ["RI", "Rhode Island", 1.40], ["SC", "South Carolina", 0.57], ["SD", "South Dakota", 1.17],
-  ["TN", "Tennessee", 0.67], ["TX", "Texas", 1.68], ["UT", "Utah", 0.57],
-  ["VT", "Vermont", 1.83], ["VA", "Virginia", 0.87], ["WA", "Washington", 0.87],
-  ["WV", "West Virginia", 0.57], ["WI", "Wisconsin", 1.61], ["WY", "Wyoming", 0.61],
+  ["AL", "Alabama", 0.40, 4285], ["AK", "Alaska", 1.07, 1385], ["AZ", "Arizona", 0.63, 3415],
+  ["AR", "Arkansas", 0.62, 4955], ["CA", "California", 0.75, 1820], ["CO", "Colorado", 0.51, 3910],
+  ["CT", "Connecticut", 1.79, 2135], ["DE", "Delaware", 0.58, 1365], ["DC", "District of Columbia", 0.57, 1645],
+  ["FL", "Florida", 0.83, 2845], ["GA", "Georgia", 0.90, 3225], ["HI", "Hawaii", 0.29, 900],
+  ["ID", "Idaho", 0.63, 2195], ["IL", "Illinois", 2.08, 3240], ["IN", "Indiana", 0.84, 2985],
+  ["IA", "Iowa", 1.52, 3765], ["KS", "Kansas", 1.34, 5455], ["KY", "Kentucky", 0.83, 3795],
+  ["LA", "Louisiana", 0.56, 2020], ["ME", "Maine", 1.24, 1525], ["MD", "Maryland", 1.05, 2375],
+  ["MA", "Massachusetts", 1.14, 1645], ["MI", "Michigan", 1.38, 2415], ["MN", "Minnesota", 1.11, 3615],
+  ["MS", "Mississippi", 0.79, 4445], ["MO", "Missouri", 0.98, 3805], ["MT", "Montana", 0.74, 3765],
+  ["NE", "Nebraska", 1.63, 6015], ["NV", "Nevada", 0.55, 1635], ["NH", "New Hampshire", 1.93, 1500],
+  ["NJ", "New Jersey", 2.23, 1480], ["NM", "New Mexico", 0.67, 2800], ["NY", "New York", 1.72, 1710],
+  ["NC", "North Carolina", 0.80, 3025], ["ND", "North Dakota", 0.98, 3510], ["OH", "Ohio", 1.59, 2080],
+  ["OK", "Oklahoma", 0.89, 7255], ["OR", "Oregon", 0.93, 1705], ["PA", "Pennsylvania", 1.49, 1720],
+  ["RI", "Rhode Island", 1.40, 2230], ["SC", "South Carolina", 0.57, 3205], ["SD", "South Dakota", 1.17, 3965],
+  ["TN", "Tennessee", 0.67, 4220], ["TX", "Texas", 1.68, 4915], ["UT", "Utah", 0.57, 1810],
+  ["VT", "Vermont", 1.83, 1170], ["VA", "Virginia", 0.87, 2265], ["WA", "Washington", 0.87, 1880],
+  ["WV", "West Virginia", 0.57, 2465], ["WI", "Wisconsin", 1.61, 2175], ["WY", "Wyoming", 0.61, 1805],
 ];
 const STATE_TAX_RATES = Object.fromEntries(STATES.map(([code, , rate]) => [code, rate]));
 const STATE_NAMES = Object.fromEntries(STATES.map(([code, name]) => [code, name]));
+const STATE_INS_AVG = Object.fromEntries(STATES.map(([code, , , ins]) => [code, ins]));
 
 /* States where the average effective rate misleads for a NEW purchase.
    CA reassesses at the purchase price (Prop 13 keeps long-held homes' average low),
@@ -139,13 +140,22 @@ function populateStates() {
 
 function applyStateRate(code) {
   const note = $("taxRateNote");
+  const insNote = $("insuranceNote");
   if (!code || STATE_TAX_RATES[code] == null) {
     note.hidden = true;
+    insNote.hidden = true;
     return;
   }
   $("taxRate").value = stateFillRate(code).toFixed(2);
   note.hidden = false;
   note.textContent = stateNote(code);
+
+  // Homeowners insurance: NerdWallet's state averages are quoted for $400k of
+  // dwelling (rebuild) coverage — roughly a $1M-market-price home once land
+  // value is counted — so fill the average as-is rather than scaling by price.
+  $("insurance").value = STATE_INS_AVG[code].toLocaleString("en-US");
+  insNote.hidden = false;
+  insNote.textContent = `${STATE_NAMES[code]} average (NerdWallet) — get a quote`;
 }
 
 /* ————— all-in closing % ⇄ commissions / slider ————— */
@@ -365,6 +375,7 @@ function applyScenario(inputs) {
   $("sellerPaysTitle").checked = inputs.sellerPaysTitle !== false;
   const st = inputs.destState || "";
   $("destState").value = st;
+  $("insuranceNote").hidden = true; // saved insurance value takes over
   // show the state note only if the saved rate still matches that state's fill rate
   const note = $("taxRateNote");
   if (st && STATE_TAX_RATES[st] != null && Math.abs((inputs.taxRate ?? 0) - stateFillRate(st)) < 0.005) {
@@ -516,8 +527,9 @@ $("destState").addEventListener("change", (e) => {
   applyStateRate(e.target.value);
   render();
 });
-// a manual edit to the rate detaches it from the state average, so drop the note
+// a manual edit detaches the value from the state average, so drop the note
 $("taxRate").addEventListener("input", () => { $("taxRateNote").hidden = true; });
+$("insurance").addEventListener("input", () => { $("insuranceNote").hidden = true; });
 
 MONEY_FIELDS.forEach((id) => {
   $(id).addEventListener("blur", (e) => { formatMoneyInput(e.target); render(); });
