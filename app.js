@@ -158,6 +158,81 @@ function applyStateRate(code) {
   insNote.textContent = `${STATE_NAMES[code]} average (NerdWallet) — get a quote`;
 }
 
+/* ————— help modals ————— */
+
+const HELP = {
+  "commissions": {
+    title: "Agent commissions",
+    body: `<p>The listing agent represents you (the seller); the buyer's agent represents your buyer. Each is entered as a percentage of the sale price.</p>
+<p><b>Both are negotiable.</b> Since the 2024 NAR settlement there is no "standard" rate — nationally they average about 5.5% combined, but every listing agreement is its own deal. Selling it yourself, or you're the agent? Set the listing side to 0.</p>
+<p>In flat-% mode these two fields drive the all-in closing cost number below. In Texas net-sheet mode they're itemized directly.</p>`,
+  },
+  "closing-pct": {
+    title: "All-in closing costs",
+    body: `<p>Everything the seller pays at closing, rolled into one percentage of the sale price: agent commissions plus roughly 2.5% for title insurance, escrow/settlement fees, and transfer costs.</p>
+<p>It auto-adjusts when you edit the commission fields (commissions + ≈2.5%). Drag the slider or type to override it with your own number.</p>
+<p><b>Caveats:</b> the ≈2.5% baseline varies by state — transfer taxes are steep in some (NY, DE, WA) and zero in others (TX). Your mortgage payoff and prorated property taxes are <b>not</b> included here; they're separate lines. National all-in seller costs typically run 8–10%.</p>`,
+  },
+  "title-policy": {
+    title: "Owner's title policy",
+    body: `<p>Title insurance protecting the buyer against defects in the title (liens, forged deeds, ownership disputes). In Texas the premium is set by the state (TDI basic rates) and by custom the <b>seller</b> pays it — that's what this checkbox models.</p>
+<p><b>It's negotiable.</b> If your contract has the buyer paying for their own policy, uncheck this — plenty of net sheets show $0 here. On a ~$1M sale the premium is roughly $5–6k, so it's worth knowing who's covering it.</p>`,
+  },
+  "fees": {
+    title: "Escrow & fixed fees",
+    body: `<p>The flat-dollar items on a seller's closing statement: escrow/settlement fee, recording fees, tax certificate, and attorney document prep. On a typical Texas net sheet these total around $1,100.</p>
+<p>This field only applies in net-sheet mode — in flat-% mode the all-in percentage already covers these costs, so it's disabled to avoid double-counting.</p>`,
+  },
+  "close-date": {
+    title: "Closing date & tax proration",
+    body: `<p>In states that pay property tax in arrears (like Texas), the seller owes the taxes that accrued from January 1 through closing day — the buyer gets that amount as a credit and pays the full bill later.</p>
+<p>This calculator computes it as: annual taxes × (days from Jan 1 to closing ÷ 365). A later closing date means a bigger deduction — closing in December costs you nearly the full year's taxes; closing in March, only a few months' worth.</p>
+<p><b>Caveat:</b> in states that pay taxes in advance, the proration can run the other way (a credit to you). Your title company's net sheet is the authority.</p>`,
+  },
+  "dest-state": {
+    title: "Destination state",
+    body: `<p>Picking a state auto-fills two fields from statewide averages: the <b>property tax rate</b> (average effective rate) and <b>annual homeowners insurance</b> (NerdWallet 2026 averages).</p>
+<p>Both stay fully editable — the averages get you in the ballpark, and your county assessor and an actual insurance quote get you the real numbers.</p>`,
+  },
+  "tax-rate": {
+    title: "Property tax rate",
+    body: `<p>Your effective annual property tax as a percentage of the home's value. The monthly figure is: purchase price × rate ÷ 12.</p>
+<p><b>Caveats:</b> real rates are set at the county/city/district level, not the state — local bonds, school districts, and special assessments (like Mello-Roos in California) can push a specific parcel well above the state average. California reassesses at your purchase price, so a new purchase typically runs ≈1.0–1.25% even though the state "average" looks lower. Check the actual parcel's tax history before you rely on this.</p>`,
+  },
+  "insurance": {
+    title: "Homeowners insurance",
+    body: `<p>Auto-filled with your destination state's average annual premium (NerdWallet 2026, based on $400k dwelling coverage with a $1,000 deductible — roughly what a ~$1M-market-price home carries once land value is excluded).</p>
+<p><b>Caveats:</b> real quotes swing wildly with wildfire, hail, wind, and flood exposure, the home's age and construction, and your deductible. In high-risk pockets (coastal Florida, wildfire-zone California) actual premiums can be a multiple of the state average — or require state FAIR plans. Get real quotes before you commit; flood insurance is always separate.</p>`,
+  },
+};
+
+let helpReturnFocus = null;
+
+function openHelp(key) {
+  const item = HELP[key];
+  if (!item) return;
+  $("helpTitle").textContent = item.title;
+  $("helpBody").innerHTML = item.body;
+  $("helpOverlay").hidden = false;
+  helpReturnFocus = document.activeElement;
+  $("helpClose").focus();
+}
+
+function closeHelp() {
+  $("helpOverlay").hidden = true;
+  if (helpReturnFocus) { helpReturnFocus.focus(); helpReturnFocus = null; }
+}
+
+document.addEventListener("click", (e) => {
+  const hint = e.target.closest(".hint[data-help]");
+  if (hint) { openHelp(hint.dataset.help); return; }
+  if (e.target.id === "helpOverlay" || e.target.closest("#helpClose")) closeHelp();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("helpOverlay").hidden) closeHelp();
+});
+
 /* ————— all-in closing % ⇄ commissions / slider ————— */
 
 function syncClosingSlider() {

@@ -57,7 +57,7 @@
 
         <div class="field-row">
           <div class="field" id="fieldListing">
-            <label for="txListingPct">Listing agent <span class="hint" title="Set to 0 if you're listing it yourself (or negotiated it away).">?</span></label>
+            <label for="txListingPct">Listing agent <button type="button" class="hint" data-help="commissions" aria-label="About agent commissions">?</button></label>
             <div class="money-wrap"><input type="text" id="txListingPct" inputmode="decimal" value="2.75"><span class="unit">%</span></div>
           </div>
           <div class="field" id="fieldBuyer">
@@ -67,7 +67,7 @@
         </div>
 
         <div class="field" id="fieldClosingPct">
-          <label for="txClosingPct">All-in closing costs <span class="hint" title="Everything the seller pays at closing, as a % of sale price: the agent commissions above plus ≈2.5% for title, escrow, and transfer costs. Auto-adjusts when you edit the commissions — or drag the slider / type to set it yourself. National all-in average runs 8–10%.">?</span></label>
+          <label for="txClosingPct">All-in closing costs <button type="button" class="hint" data-help="closing-pct" aria-label="About all-in closing costs">?</button></label>
           <div class="money-wrap"><input type="text" id="txClosingPct" inputmode="decimal" value="8.0"><span class="unit">%</span></div>
           <input type="range" id="txClosingPctSlider" min="0" max="15" step="0.1" value="8.0" aria-label="All-in closing costs percentage">
           <div class="field-note" id="closingPctNote" hidden></div>
@@ -77,7 +77,7 @@
           <label class="check-label" for="sellerPaysTitle">
             <input type="checkbox" id="sellerPaysTitle" checked>
             Seller pays owner's title policy
-            <span class="hint" title="Texas custom is seller-paid (TDI basic premium rates). Uncheck if the buyer is covering it — some net sheets show $0 here.">?</span>
+            <button type="button" class="hint" data-help="title-policy" aria-label="About the owner's title policy">?</button>
           </label>
         </div>
 
@@ -87,13 +87,13 @@
             <div class="money-wrap"><span class="unit">$</span><input type="text" id="txAnnualTax" inputmode="numeric" value="12,000"></div>
           </div>
           <div class="field">
-            <label for="txCloseDate">Closing date</label>
+            <label for="txCloseDate">Closing date <button type="button" class="hint" data-help="close-date" aria-label="About the closing date and tax proration">?</button></label>
             <div class="money-wrap"><input type="date" id="txCloseDate" value="2026-08-25"></div>
           </div>
         </div>
 
         <div class="field" id="fieldFees">
-          <label for="txClosing">Escrow &amp; fixed fees <span class="hint" title="Flat-dollar closing items on the seller's side — escrow/settlement fee, recording fees, document prep. Only applies in net-sheet mode; the flat closing % already covers these.">?</span></label>
+          <label for="txClosing">Escrow &amp; fixed fees <button type="button" class="hint" data-help="fees" aria-label="About escrow and fixed fees">?</button></label>
           <div class="money-wrap"><span class="unit">$</span><input type="text" id="txClosing" inputmode="numeric" value="0"></div>
         </div>
 
@@ -155,19 +155,19 @@
         </div>
 
         <div class="field">
-          <label for="destState">Destination state <span class="hint" title="Sets the property-tax rate to the state's average effective rate. You can still edit the rate below for your specific parcel.">?</span></label>
+          <label for="destState">Destination state <button type="button" class="hint" data-help="dest-state" aria-label="About the destination state auto-fill">?</button></label>
           <div class="money-wrap select-wrap"><select id="destState"><option value="">Select state…</option></select></div>
         </div>
 
         <div class="field">
-          <label for="taxRate">Property tax rate <span class="hint" title="Effective annual property tax as a % of the home's value. Auto-filled from the destination state's average — override it for the specific parcel (local bonds and assessments vary).">?</span></label>
+          <label for="taxRate">Property tax rate <button type="button" class="hint" data-help="tax-rate" aria-label="About the property tax rate">?</button></label>
           <div class="money-wrap"><input type="text" id="taxRate" inputmode="decimal" value="1.10"><span class="unit">%/yr</span></div>
           <div class="field-note" id="taxRateNote" hidden></div>
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label for="insurance">Insurance <span class="hint" title="Auto-filled from the destination state's average premium (NerdWallet 2026, $400k dwelling coverage — roughly a $1M home). Rates vary a lot by location, home, and deductible — replace with a real quote.">?</span><span class="label-unit">$/yr</span></label>
+            <label for="insurance">Insurance <button type="button" class="hint" data-help="insurance" aria-label="About the insurance estimate">?</button><span class="label-unit">$/yr</span></label>
             <div class="money-wrap"><span class="unit">$</span><input type="text" id="insurance" inputmode="numeric" value="3,600"></div>
             <div class="field-note" id="insuranceNote" hidden></div>
           </div>
@@ -244,6 +244,14 @@
     <p>Estimates only — lender quotes, actual parcel tax bills, and insurance quotes will vary. Selling costs default to a single flat percentage of the sale price; the optional <b>Texas net sheet</b> mode instead models the owner's title policy from the TDI basic premium rates effective March&nbsp;1,&nbsp;2026 and prorates property tax from Jan&nbsp;1 to the closing date. Property tax is modeled as an effective annual rate on the purchase price; the destination-state selector fills in that state's average effective rate, which you can override. It also fills homeowners insurance with the state's average premium (NerdWallet 2026, $400k dwelling coverage) — actual quotes vary widely by location, construction, and coverage. Scenarios are saved privately in this browser.</p>
   </footer>
 </main>
+
+<div class="help-overlay" id="helpOverlay" hidden>
+  <div class="help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <button type="button" class="help-close" id="helpClose" aria-label="Close">×</button>
+    <h3 id="helpTitle"></h3>
+    <div class="help-body" id="helpBody"></div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>
